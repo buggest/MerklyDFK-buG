@@ -170,31 +170,35 @@ def main():
 
     tx_count = random.randint(TRANSACTION_FROM, TRANSACTION_TO)
     for number, key in numbered_list_keys:
-        if transaction_manager.proxies:
-            if IS_RANDOM:
-                proxy = random.choice(transaction_manager.proxies)
+        try:
+            if transaction_manager.proxies:
+                if IS_RANDOM:
+                    proxy = random.choice(transaction_manager.proxies)
+                else:
+                    proxy = transaction_manager.proxies[number]
             else:
-                proxy = transaction_manager.proxies[number]
-        else:
-            proxy = None
-        cprint(f'Proxy: {proxy}')
-
-        for i in range(tx_count):
-            try:
-                res = transaction_manager.merkly_refuel(key, work_mode, token_price)
-            except ValueError as e:
-                cprint(f"После 3х попыток не удалось сделать Refuel: \n{str(e)}", 'red')
-                res = e.args[0]['message']
-            account = transaction_manager.web3.eth.account.from_key(key)
-            csv_writer.write_to_csv(work_mode, key, account.address, res, i)
-            if (i != tx_count - 1):
-                time_sleep_txn = random.randint(TRANSACTION_DELAY_FROM, TRANSACTION_DELAY_TO)
-                cprint(f'Сплю {time_sleep_txn} сек между транзакциями на аккаунте {account.address}', 'blue')
-                time.sleep(time_sleep_txn)
-        if (number != last_index):
-            time_sleep_accs = random.randint(ACCOUNT_DELAY_FROM, ACCOUNT_DELAY_TO)
-            cprint(f'Сплю {time_sleep_accs} сек между аккаунтами', 'blue')
-            time.sleep(time_sleep_accs)
+                proxy = None
+            cprint(f'Proxy: {proxy}')
+    
+            for i in range(tx_count):
+                try:
+                    res = transaction_manager.merkly_refuel(key, work_mode, token_price)
+                except ValueError as e:
+                    cprint(f"После 3х попыток не удалось сделать Refuel: \n{str(e)}", 'red')
+                    res = e.args[0]['message']
+                account = transaction_manager.web3.eth.account.from_key(key)
+                csv_writer.write_to_csv(work_mode, key, account.address, res, i)
+                if (i != tx_count - 1):
+                    time_sleep_txn = random.randint(TRANSACTION_DELAY_FROM, TRANSACTION_DELAY_TO)
+                    cprint(f'Сплю {time_sleep_txn} сек между транзакциями на аккаунте {account.address}', 'blue')
+                    time.sleep(time_sleep_txn)
+            if (number != last_index):
+                time_sleep_accs = random.randint(ACCOUNT_DELAY_FROM, ACCOUNT_DELAY_TO)
+                cprint(f'Сплю {time_sleep_accs} сек между аккаунтами', 'blue')
+                time.sleep(time_sleep_accs)
+        except Exception as error:
+            cprint(f"{last_index + 1} {account.address} {error}", 'red')
+            
     cprint(f'Все {last_index + 1} кошельков были отработаны', 'green')
 
 if __name__ == '__main__':
