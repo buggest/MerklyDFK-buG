@@ -1,3 +1,4 @@
+import math
 import random
 import time
 import config
@@ -89,14 +90,17 @@ class TransactionManager:
             }
 
         elif type_tx == 'Polygon':
-            cummision = int(0.015414351335138046 * 10 ** 18)
+
+            native_fee = contract.functions.estimateSendFee(212, b'', adapter_params).call()
+            value = int(math.ceil(native_fee[0] * 1.01))
+
             transaction = contract.functions.bridgeGas(
                 212, #Conflux ID
                 address,
                 adapter_params).build_transaction(
                 {
                     "from": address,
-                    "value": value + cummision,
+                    "value": value,
                     "nonce": nonce,
                     'gasPrice': 0,
                     'gas': 0,
@@ -141,11 +145,6 @@ class CSVWriter:
             writer.writerow([type_tx, key, address, result, number_of_txn + 1])
 
 def main():
-    cprint(f'\n============================================= 0rex =============================================', 'cyan')
-    cprint(f'\ndonate: 0x5086028342e11b4ea1c405ca9923c4f3ffa0056f', 'cyan')
-    cprint(f'\nsubscribe to me : https://t.me/orex_code', 'magenta')
-    print()
-
     cprint(f'Выберите режим работы: \n Klaytn->Fuse выберите 1 \n Polygon->Conflux выберите 2 ')
     work_mode = int(input())
 
@@ -183,9 +182,13 @@ def main():
             for i in range(tx_count):
                 try:
                     res = transaction_manager.merkly_refuel(key, work_mode, token_price)
-                except ValueError as e:
+                except Exception as e:
                     cprint(f"После 3х попыток не удалось сделать Refuel: \n{str(e)}", 'red')
                     res = e.args[0]['message']
+                    if hasattr(e, 'args') and len(e.args) > 0 and isinstance(e.args[0], dict):
+                        res = e.args[0].get('message', str(e))
+                    else:
+                        res = str(e)
                 account = transaction_manager.web3.eth.account.from_key(key)
                 csv_writer.write_to_csv(work_mode, key, account.address, res, i)
                 if (i != tx_count - 1):
